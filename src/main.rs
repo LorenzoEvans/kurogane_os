@@ -1,5 +1,7 @@
+#![feature(exclusive_range_pattern)]
 #![no_std]
 #![no_main]
+
 use core::panic::PanicInfo;
 mod vga_buffer;
 
@@ -12,11 +14,11 @@ pub extern "C" fn _start() -> ! {
     // Extern "C" tells the compiler that it should use the C calling convention
     let vga_buffer = 0xb8000 as *mut u8;
     // Casts the hexadecimal integer to a raw pointer
-        // raw pointers can ignore borrowing rules, having both mutable and 
-        // immutable pointers to the same location
-        // Aren't guaranteed to point to valid memory
-        // Can be null
-        // Don't have automatic cleanup
+    // raw pointers can ignore borrowing rules, having both mutable and 
+    // immutable pointers to the same location
+    // Aren't guaranteed to point to valid memory
+    // Can be null
+    // Don't have automatic cleanup
     // We use enumerate to get a running variable, and we use offset method
     // to write the string and the corresponding color byte.
     for (i, &byte) in HELLO.iter().enumerate() {
@@ -25,6 +27,7 @@ pub extern "C" fn _start() -> ! {
             *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
         }
     }
+    vga_buffer::print_something();
     loop {}
 }
 #[panic_handler]
