@@ -90,6 +90,5 @@ pub fn print_something() {
         buffer: unsafe { &mut *(0xb8000 as *mut Buffer)}
     };
     writer.write_byte(b'H');
-    writer.write_string("MARIJUANA, HYDRO, PUSSY, HOE, ASS TITTIES");
     writer.write_string("IF A DOG CHEWS SHOES WHOSE SHOES DOES HE CHOOSE?");
 }
