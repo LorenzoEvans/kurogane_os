@@ -11,3 +11,4 @@ rustflags = ["-C", "link-args=-e __start -static -nostartfiles"]
 target = "x86_64-kurogane_os.json"
 [target.'cfg(target_os="none")']
 runner = "bootimage runner"
+spin = "0.5.2"

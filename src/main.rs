@@ -11,8 +11,10 @@ mod vga_buffer;
 static HELLO: &[u8] = b"Enter Kurogane OS: Save yourself- everything else? Get a thumb drive.";
 #[no_mangle] 
 pub extern "C" fn _start() -> ! {
+    use core::fmt::Write;
+    vga_buffer::WRITER.lock().write_str("Hello again").unwrap();
+    write!(vga_buffer::WRITER.lock(), ", some numbers: {} {}", 42, 1.337).unwrap();
     // Extern "C" tells the compiler that it should use the C calling convention
-    let vga_buffer = 0xb8000 as *mut u8;
     // Casts the hexadecimal integer to a raw pointer
     // raw pointers can ignore borrowing rules, having both mutable and 
     // immutable pointers to the same location
@@ -21,13 +23,7 @@ pub extern "C" fn _start() -> ! {
     // Don't have automatic cleanup
     // We use enumerate to get a running variable, and we use offset method
     // to write the string and the corresponding color byte.
-    for (i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vga_buffer.offset(i as isize * 2) = byte;
-            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-        }
-    }
-    vga_buffer::print_something();
+
     loop {}
 }
 #[panic_handler]
