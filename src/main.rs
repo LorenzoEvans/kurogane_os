@@ -1,9 +1,9 @@
-#![feature(exclusive_range_pattern)]
-#![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
 #![no_std]
 #![no_main]
+#![feature(custom_test_frameworks)]
+#![test_runner(crate::test_runner)]
 
+#![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
 mod vga_buffer;
 
@@ -17,10 +17,12 @@ fn test_runner(tests: &[&dyn Fn()]) {
         test();
     }
 }
-static HELLO: &[u8] = b"Enter Kurogane OS: Save yourself- everything else? Get a thumb drive.";
 #[no_mangle] 
 pub extern "C" fn _start() -> ! {
     println!("Kurogane OS will be with you shortly.");
+
+    #[cfg(test)]
+    test_main();
     // Extern "C" tells the compiler that it should use the C calling convention
     // Casts the hexadecimal integer to a raw pointer
     // raw pointers can ignore borrowing rules, having both mutable and 
@@ -43,3 +45,5 @@ fn panic(_info: &PanicInfo) -> ! {
         // break, continue and return are of type `!`.
     loop {}
 }
+
+#[test_case]
