@@ -21,7 +21,7 @@ fn test_runner(tests: &[&dyn Fn()]) {
 #[no_mangle] 
 pub extern "C" fn _start() -> ! {
     println!("Kurogane OS will be with you shortly.");
-    println!("Keep tabs at")
+    // println!("Keep tabs at")
     #[cfg(test)]
     test_main();
     // Extern "C" tells the compiler that it should use the C calling convention
