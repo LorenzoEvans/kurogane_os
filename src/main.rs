@@ -2,7 +2,6 @@
 #![no_main]
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test_runner)]
-
 #![reexport_test_harness_main = "test_main"]
 use core::panic::PanicInfo;
 mod vga_buffer;
@@ -11,16 +10,17 @@ mod serial;
 // has the name _start, as opposed to K#JH$K28294.sd3.core$_fn.2392032
 
 #[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
+fn test_runner(tests: &[&dyn Testable]) {
     serial_println!("Running {} tests", tests.len());
     for test in tests {
-        test();
+        test.run();
     }
     exit_qemu(QemuExitCode::Success);
 }
 #[no_mangle] 
 pub extern "C" fn _start() -> ! {
-    println!("Kurogane OS will be with you shortly.");
+    println!("Kurogane OS will be with you shortly.\n", );
+    println!("In the meantime, save yourself. Everything else? Get a thumb drive.");
     // println!("Keep tabs at")
     #[cfg(test)]
     test_main();
@@ -51,6 +51,20 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         port.write(exit_code as u32);
     }
 }
+
+pub trait Testable {
+    fn run(&self) -> ();
+}
+impl<T> Testable for T 
+where
+    T: Fn(),
+{
+    fn run(&self) {
+        serial_print!("{}...\t", core::any::type_name::<T>());
+        self();
+        serial_println!("[ok]")
+    }
+}
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
@@ -69,10 +83,9 @@ fn panic(info: &PanicInfo) -> ! {
     serial_println!("[failed]\n");
     serial_println!("Error {}\n", info);
     exit_qemu(QemuExitCode::Failure);
+    loop {}
 }
 #[test_case]
 fn trivial_assertion() {
-    serial_print!("Trivial assertion...");
     assert_eq!(1, 1);
-    serial_println!("[ok]")
 }
