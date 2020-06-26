@@ -11,11 +11,20 @@ mod serial;
 
 #[no_mangle] 
 pub extern "C" fn _start() -> ! {
-    println!("Kurogane OS will be with you shortly.\n", );
+
+    
+    kurogane_os::init();
+    
+    unsafe {
+        *(0xdeadbeef as *mut u64) = 42;
+    }
+    
     println!("In the meantime, save yourself. Everything else? Get a thumb drive.");
-    // println!("Keep tabs at")
+    x86_64::instructions::interrupts::int3();
+   
     #[cfg(test)]
     test_main();
+   
     // Extern "C" tells the compiler that it should use the C calling convention
     // Casts the hexadecimal integer to a raw pointer
     // raw pointers can ignore borrowing rules, having both mutable and 
