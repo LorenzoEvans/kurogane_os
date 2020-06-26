@@ -12,6 +12,7 @@ mod serial;
 #[no_mangle] 
 pub extern "C" fn _start() -> ! {
 
+    println!("Kurogane!");
     
     kurogane_os::init();
     
@@ -19,12 +20,10 @@ pub extern "C" fn _start() -> ! {
         *(0xdeadbeef as *mut u64) = 42;
     }
     
-    println!("In the meantime, save yourself. Everything else? Get a thumb drive.");
-    x86_64::instructions::interrupts::int3();
-   
     #[cfg(test)]
     test_main();
-   
+    
+    println!("In the meantime, save yourself. Everything else? Get a thumb drive.");
     // Extern "C" tells the compiler that it should use the C calling convention
     // Casts the hexadecimal integer to a raw pointer
     // raw pointers can ignore borrowing rules, having both mutable and 
@@ -34,7 +33,6 @@ pub extern "C" fn _start() -> ! {
     // Don't have automatic cleanup
     // We use enumerate to get a running variable, and we use offset method
     // to write the string and the corresponding color byte.
-
     loop {}
 }
 
@@ -57,7 +55,8 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
 
 #[cfg(not(test))]
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     // This function should never return,
     // so we mark it as a diverging function, with the "never" type `!`.
         // Diverging functions are functions that do not return.
