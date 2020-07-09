@@ -6,15 +6,19 @@
 use core::panic::PanicInfo;
 mod vga_buffer;
 mod serial;
+
 // We use no mange to disable name mangling, so that the output actually,
 // has the name _start, as opposed to K#JH$K28294.sd3.core$_fn.2392032
-
 #[no_mangle] 
-pub extern "C" fn _start() -> ! {
+pub extern "C" fn _start() -> ! { // returns `Never` type for diverging function.
 
     println!("Kurogane!");
     
     kurogane_os::init();
+
+    fn stack_overflow() {
+        stack_overflow();
+    }
     
     unsafe {
         *(0xdeadbeef as *mut u64) = 42;
@@ -54,8 +58,11 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
 
 
 #[cfg(not(test))]
-#[panic_handler]
+#[panic_handler] // This defines the function for the compiler to invoke on panics.
 fn panic(info: &PanicInfo) -> ! {
+    // We re-implement panic as it comes from the stdlib,
+    // which we disabled earlier.\
+    // Panic Info contains the file and line that caused the panic
     println!("{}", info);
     // This function should never return,
     // so we mark it as a diverging function, with the "never" type `!`.

@@ -10,6 +10,7 @@ use core::panic::PanicInfo;
 pub mod serial;
 pub mod vga_buffer;
 pub mod interrupts;
+pub mod gdt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -27,6 +28,7 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
     }
 }
 pub fn init() {
+    gdt::init();
     interrupts::init_idt();
 }
 pub trait Testable {
