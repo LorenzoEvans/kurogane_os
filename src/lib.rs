@@ -18,7 +18,6 @@ pub enum QemuExitCode {
     Success = 0x10,
     Failed = 0x11,
 }
-
 pub fn exit_qemu(exit_code: QemuExitCode) {
     use x86_64::instructions::port::Port;
 
@@ -30,6 +29,8 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
 pub fn init() {
     gdt::init();
     interrupts::init_idt();
+    unsafe { interrupts::PICS.lock().initialize()};
+    x86_64::instructions::interrupts::enable(); // executes set interrupts instruction.
 }
 pub trait Testable {
     fn run(&self) -> ();

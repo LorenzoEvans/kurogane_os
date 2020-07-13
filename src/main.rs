@@ -16,13 +16,7 @@ pub extern "C" fn _start() -> ! { // returns `Never` type for diverging function
     
     kurogane_os::init();
 
-    fn stack_overflow() {
-        stack_overflow();
-    }
-    
-    unsafe {
-        *(0xdeadbeef as *mut u64) = 42;
-    }
+
     
     #[cfg(test)]
     test_main();
