@@ -1,14 +1,15 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
-use crate::println;
-use crate::gdt;
-use crate::print;
+use crate::println; // locally defined println
+use crate::gdt; // local gdt module.
+use crate::print; // locally defined print.
 use spin;
-use pic8259_simple::ChainedPics;
+use pic8259_simple::ChainedPics; // Allows us to handle hardware interrupts
 use lazy_static::lazy_static;
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
 pub enum InterruptIndex {
     Timer = PIC_1_OFFSET,
+    Keyboard
 }
 
 impl InterruptIndex {
@@ -30,10 +31,15 @@ pub static PICS: spin::Mutex<ChainedPics> =
     // cause undefined behavior, hence our wrapping them in unsafe.
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
+        // IDT's are a way to map exception handler functions to
+        // corresponding CPU exceptions, and we're borrowing ours from
+        // the x86_84 intel architecture.
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
         idt[InterruptIndex::Timer.as_usize()]
             .set_handler_fn(timer_interrupt_handler);
+        idt[InterruptIndex::Keyboard.as_usize()]
+            .set_handler_fn(keyboard_interrupt_handler);
         unsafe {
                 idt.double_fault
                     .set_handler_fn(double_fault_handler)
@@ -42,8 +48,41 @@ lazy_static! {
         idt
     };
 }
+
+extern "x86-interrupt" fn keyboard_interrupt_handler(
+    _stack_frame: &mut InterruptStackFrame
+)
+{   use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
+    use x86_64::instructions::port::Port;
+    use spin::Mutex;
+
+    lazy_static! { // We create a interior mutable keyboard structure in order to safely
+                  // read events/data from a specified port.
+        static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
+            Mutex::new(Keyboard::new(layouts::Us104Key, 
+                                     ScancodeSet1, 
+                                     HandleControl::Ignore));
+    }
+
+    let mut keyboard = KEYBOARD.lock();
+    let mut port = Port::new(0x60);
+    let scancode: u8 = unsafe { port.read() };
+
+    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
+        if let Some(key) = keyboard.process_keyevent(key_event) {
+            match key {
+                DecodedKey::Unicode(character) => print!("{}", character),
+                DecodedKey::RawKey(key) => print!("{:?}", key)
+            }
+        }
+    }
+    
+    unsafe {
+        PICS.lock()
+            .notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8())
+    }
+}
 extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: &mut InterruptStackFrame) {
-    print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8());
     }

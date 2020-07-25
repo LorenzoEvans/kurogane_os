@@ -9,8 +9,9 @@ pub fn _print(args: ::core::fmt::Arguments) {
 }
 
 lazy_static! {
-    pub static ref SERIAL1: Mutex<SerialPort> = {
-        let mut serial_port = unsafe { SerialPort::new(0x3F8)};
+    pub static ref SERIAL1: Mutex<SerialPort> = { 
+        let mut serial_port = unsafe { SerialPort::new(0x3F8)}; // We wrap this write to a port in unsafe
+                                                                // as we can't always guarantee the availability of a given port.
         serial_port.init();
         Mutex::new(serial_port)
     };

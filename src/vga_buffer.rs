@@ -138,6 +138,9 @@ pub fn print_something() {
 }
 
 lazy_static! {
+    // Delays initialization of a static value until it is
+    // referenced, allowing us to do more set up in the initialization,
+    // and read run-time values.
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
         // We use a mutex here for interior mutability, so that
         // we want mutate our writers contents, without having to
@@ -151,7 +154,10 @@ lazy_static! {
     });
 }
 
-#[macro_export]
+
+// Macros are defined by rules, one for calls without args,
+// and additional rules for expanding and evaluating calls with args.
+#[macro_export] // exports module, makes it available from "root" level.
 macro_rules! print {
     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
 }
@@ -164,7 +170,10 @@ macro_rules! println {
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    use x86_64::instructions::interrupts;
+    interrupts::without_interrupts(||{
+        WRITER.lock().write_fmt(args).unwrap();
+    });
 }
 
 #[test_case]
@@ -181,10 +190,15 @@ fn test_println_many() {
 
 #[test_case]
 fn test_println_output() {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
     let s = "Some test string that fits on a single line";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.ascii_character), c);
-    }
+    interrupts::without_interrupts(||{
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("writeln failed");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_character), c);
+        }
+    })
 }

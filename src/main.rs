@@ -22,6 +22,7 @@ pub extern "C" fn _start() -> ! { // returns `Never` type for diverging function
     test_main();
     
     println!("In the meantime, save yourself. Everything else? Get a thumb drive.");
+    println!("Enter, Kurogane")
     // Extern "C" tells the compiler that it should use the C calling convention
     // Casts the hexadecimal integer to a raw pointer
     // raw pointers can ignore borrowing rules, having both mutable and 
@@ -31,7 +32,7 @@ pub extern "C" fn _start() -> ! { // returns `Never` type for diverging function
     // Don't have automatic cleanup
     // We use enumerate to get a running variable, and we use offset method
     // to write the string and the corresponding color byte.
-    loop {}
+    kurogane_os::hlt_loop();
 }
 
 
@@ -66,7 +67,7 @@ fn panic(info: &PanicInfo) -> ! {
         // ! Represents the type of computations which never resolve to a value,
         // such as exit().
         // break, continue and return are of type `!`.
-    loop {}
+    kurogane_os::hlt_loop();
 }
 
 #[cfg(test)]

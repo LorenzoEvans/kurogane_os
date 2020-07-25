@@ -4,13 +4,16 @@ use lazy_static::lazy_static;
 use x86_64::structures::gdt::{GlobalDescriptorTable, Descriptor};
 use x86_64::structures::gdt::SegmentSelector;
 
-pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
+pub const DOUBLE_FAULT_IST_INDEX: u16 = 0; // Define the index that will hold our double fault instruction.
 
 lazy_static! {
     static ref TSS: TaskStateSegment = {
+        // An x86 structure that holds information about a task,
+        // for consumption vy the kernel, such as register state,
+        // I/O permissions, and stack pointers.
         let mut tss = TaskStateSegment::new();
-        tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = {
-            const STACK_SIZE: usize = 4096;
+        tss.interrupt_stack_table[DOUBLE_FAULT_IST_INDEX as usize] = { // We specifically target the index containing the double fault exception handler.
+            const STACK_SIZE: usize = 4096; // initialize our stack with some memory.
             static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
 
             let stack_start = VirtAddr::from_ptr(unsafe { &STACK});
@@ -23,9 +26,10 @@ lazy_static! {
 
 lazy_static! {
     static ref GDT: (GlobalDescriptorTable, Selectors) = {
-        // Our GDT is a table of Interrupt vector tables, which is a table of
-        // interrupt messages and the corresponding hardware functions to be called upon
-        // receipt of interrupt message codes
+        // A GDT is a structure used by x86 processors to define
+        // characteristics of memory areas used during the lifetime
+        // of a program.
+        // GDT entries can be TSS's.
         let mut gdt = GlobalDescriptorTable::new();
         let code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
         let tss_selector = gdt.add_entry(Descriptor::tss_segment(&TSS));
