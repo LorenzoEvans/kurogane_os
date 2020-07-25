@@ -1,4 +1,6 @@
-use volatile::Volatile;
+use volatile::Volatile; // Allows us to mark thing as volatile
+                        // and make them safe from compiler optimizations
+                        // that may exclude non-deterministic results (side effects)
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
@@ -22,11 +24,12 @@ pub enum Color {
     Yellow = 14,
     White = 15,
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)] // Allows comparison for screen characters to test printability.
 #[repr(transparent)]
 struct ColorCode(u8);
 
 impl ColorCode {
+    // Returns a full color byte, containing foreground and background.
     fn new(foreground: Color, background: Color) -> ColorCode {
         // ColorCode((background as u8) << 4 | (foreground as u8))
         ColorCode((background as u8) << 4 | (foreground as u8))
@@ -49,21 +52,27 @@ struct Buffer {
 }
 
 pub struct Writer {
+    // Writes to the last line of a given row, shifting lines up upon
+    // completion, pulling in foreground and backgrounds from the ColorCode
+    // type.
     column_position: usize,
     color_code: ColorCode,
     buffer: &'static mut Buffer,
 }
 impl Writer {
     pub fn write_byte(&mut self, byte: u8) {
+        // Method to modify characters VGA buffer, and write single
+        // ascii bytes.
         match byte {
-            b'\n' => self.new_line(),
-            byte => {
-                if self.column_position >= BUFFER_WIDTH {
+            b'\n' => self.new_line(), // return newline at end of row.
+            byte => { // if we have a byte of text,
+                if self.column_position >= BUFFER_WIDTH { // we want to start it on a newline, if the column position
+                                                        // is greater than the length of a buffer row
                     self.new_line();
                 }
                 
-                let row = BUFFER_HEIGHT - 1;
-                let col = self.column_position;
+                let row = BUFFER_HEIGHT - 1; // We want to select the current row, as it is somewhat empty, and available for bytes.
+                let col = self.column_position; // We select the current column position, as we want to write our char to the immediately available slot.
                 let color_code = self.color_code;
                 self.buffer.chars[row][col].write(ScreenChar {
                     ascii_character: byte,
@@ -75,14 +84,21 @@ impl Writer {
     }
     
     pub fn write_string(&mut self, s: &str) {
+        // Allows us to print strings to the VGA buffer,
+        // by converting them into a sequence of bytes, that we
+        // print one by one.
         for byte in s.bytes() {
             match byte {
+                // covers ascii byte range via hexadecimal.
                 0x20..=0x7e | b'\n' => self.write_byte(byte),
-                _ => self.write_byte(0xfe)
+                _ => self.write_byte(0xfe) // Rust strings are utf-8, so we have to catch any characters
+                                            // that are outside of the range VGA can display
             }
         }
     }
     fn new_line(&mut self) {
+        // Function to reset cursor position to the beginning of the
+        // next available row in our buffer.
         for row in 1..BUFFER_HEIGHT {
             for col in 0..BUFFER_WIDTH {
                 let character = self.buffer.chars[row][col].read();
@@ -123,6 +139,12 @@ pub fn print_something() {
 
 lazy_static! {
     pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
+        // We use a mutex here for interior mutability, so that
+        // we want mutate our writers contents, without having to
+        // make the entire structure mutable.
+        // This mutex initiates a spinlock (which doesn't depend on blocking threads)
+        // which initiates a tight loop of continuous locking to deny access
+        // until the mutex is free again.
         column_position: 0,
         color_code: ColorCode::new(Color::Yellow, Color::Black),
         buffer: unsafe {&mut *(0xb8000 as *mut Buffer)},
@@ -138,12 +160,6 @@ macro_rules! println {
     () => ($crate::print!("\n"));
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
-// #[macro_export]
-// macro_rules! pretty_print {
-//     () => {
-        
-//     };
-// }
 
 #[doc(hidden)]
 pub fn _print(args: fmt::Arguments) {

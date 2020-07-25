@@ -15,7 +15,7 @@ lazy_static! {
         Mutex::new(serial_port)
     };
 }
-#[macro_export]
+#[macro_export] // Exporting our print functions for callability from other modules.
 macro_rules! serial_print {
     ($($arg:tt)*) => {
         $crate::serial::_print(format_args!($($arg)*))

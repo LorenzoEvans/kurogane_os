@@ -42,6 +42,8 @@ pub enum QemuExitCode {
     Failure = 0x11,
 }
 pub fn exit_qemu(exit_code: QemuExitCode) {
+    // Allows us to signal to Qemu to terminate an instance of itself
+    // from within the OS.
     use x86_64::instructions::port::Port;
 
     unsafe {

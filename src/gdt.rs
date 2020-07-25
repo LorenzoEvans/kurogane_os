@@ -23,6 +23,9 @@ lazy_static! {
 
 lazy_static! {
     static ref GDT: (GlobalDescriptorTable, Selectors) = {
+        // Our GDT is a table of Interrupt vector tables, which is a table of
+        // interrupt messages and the corresponding hardware functions to be called upon
+        // receipt of interrupt message codes
         let mut gdt = GlobalDescriptorTable::new();
         let code_selector = gdt.add_entry(Descriptor::kernel_code_segment());
         let tss_selector = gdt.add_entry(Descriptor::tss_segment(&TSS));
